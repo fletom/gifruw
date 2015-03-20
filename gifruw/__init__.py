@@ -25,20 +25,15 @@ class Element(object):
 			else:
 				self.content = unicode(arg)
 		
-		for attr in attrs:
-			if attr[:5] == 'data_':
-				attrs['data-' + attr[5:]] = attrs[attr]
-				del attrs[attr]
-		
 		self.attributes = attrs
 	
 	@property
 	def open(self):
-		attributes_string = u''
+		attributes_string = ''
 		for key, value in self.attributes.items():
 			if not isinstance(value, basestring):
 				value = unicode(value)
-			attributes_string += ' ' + key + '=\'' + escape(value).replace('\'', '&#39;') + '\''
+			attributes_string += ' ' + key.replace('_', '-') + '=\'' + escape(value).replace('\'', '&#39;') + '\''
 		
 		return (
 			'<' +
