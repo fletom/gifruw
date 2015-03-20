@@ -7,7 +7,7 @@ _ic_regex = re.compile(r'[\.#]-?[_a-z][_a-z0-9-]*')
 def parce_ic(string):
 	
 	id = None
-	classes = set()
+	classes = []
 	
 	matches = _ic_regex.findall(string)
 	
@@ -17,7 +17,7 @@ def parce_ic(string):
 	for match in matches:
 		type, name =  match[0], match[1:]
 		if type == '.':
-			classes.add(name)
+			classes.append(name)
 		elif type == '#':
 			id = name
 	
