@@ -22,3 +22,7 @@ def parce_ic(string):
 			id = name
 	
 	return id, classes
+
+
+def escape(s):
+	return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')

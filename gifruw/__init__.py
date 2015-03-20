@@ -1,8 +1,7 @@
-from cgi import escape
 from contextlib import contextmanager
 from keyword import iskeyword
 
-from .parse_ic import parce_ic
+from .utils import parce_ic, escape
 
 
 class Element(object):
@@ -39,7 +38,7 @@ class Element(object):
 		for key, value in self.attributes.items():
 			if not isinstance(value, basestring):
 				value = unicode(value)
-			attributes_string += ' ' + key + '="' + escape(value, quote = True) + '"'
+			attributes_string += ' ' + key + '=\'' + escape(value).replace('\'', '&#39;') + '\''
 		
 		return (
 			'<' +
