@@ -128,7 +128,7 @@ class Document(object):
 			raise AttributeError("No such element or attribute: " + name)
 	
 	def __iadd__(self, content):
-		# Add text without considering autoescape.
+		# Add content without considering autoescape.
 		self._pieces.append(content)
 		return self
 	
