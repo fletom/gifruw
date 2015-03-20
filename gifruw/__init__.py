@@ -111,11 +111,13 @@ class Document(object):
 		
 		# Elements that are also Python keywords like <del> need to be prefixed with an underscore.
 		if name[0] == '_' and iskeyword(name[1:]):
-			name = name[1:]
+			element_name = name[1:]
+		else:
+			element_name = name
 		
-		if name in self.element_names:
+		if element_name in self.element_names:
 			def make_element(*args, **attrs):
-				element = self.Element(name, self, args, attrs)
+				element = self.Element(element_name, self, args, attrs)
 				content = element.content
 				if self._autoescape_mode:
 					content = escape(content)
@@ -123,6 +125,8 @@ class Document(object):
 				# Return so that the with: syntax can be used.
 				if element_name not in self.void_element_names:
 					return element
+			# Cache the element function.
+			setattr(self, name, make_element)
 			return make_element
 		else:
 			raise AttributeError("No such element or attribute: " + name)
