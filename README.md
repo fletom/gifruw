@@ -1,5 +1,7 @@
 # gifruw
 
+[![Build Status](https://img.shields.io/travis/fletom/gifruw.svg)](https://travis-ci.org/fletom/gifruw)
+
 gifruw is an experimental templating engine for Python. The templates themselves are nothing but pure Python code.
 
 It uses the "with" syntax and context managers that were introduced in Python 2.5 with [PEP 343](http://www.python.org/dev/peps/pep-0343/). It therefore takes advantage of Python's self-enforcing whitespace-significant structure, which is nice if you're into that sort of thing.
