@@ -39,25 +39,18 @@ class Element(object):
 			'<' +
 			self.name +
 			attributes_string +
-			('/' if self.is_void else '') +
+			('/' if self.name in self.document.void_element_names else '') +
 			'>'
 		)
 	
 	@property
 	def close(self):
-		if self.is_void:
+		if self.name in self.document.void_element_names:
 			return ''
 		else:
 			return '</' + self.name + '>'
 	
-	@property
-	def is_void(self):
-		return self.name in self.document.void_element_names
-	
 	def __enter__(self):
-		if self.is_void:
-			raise ValueError("Void elements cannot be used with the context manager syntax.")
-		
 		self._popped = self.document.pop()
 	
 	def __exit__(self, *args):
@@ -127,7 +120,9 @@ class Document(object):
 				if self._autoescape_mode:
 					content = escape(content)
 				self._pieces += [element.open, content, element.close]
-				return element
+				# Return so that the with: syntax can be used.
+				if element_name not in self.void_element_names:
+					return element
 			return make_element
 		else:
 			raise AttributeError("No such element or attribute: " + name)
