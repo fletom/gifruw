@@ -4,62 +4,21 @@ from keyword import iskeyword
 from .utils import parce_ic, escape
 
 
-class Element(object):
+class _ElementContextManager(object):
 	
-	def __init__(self, name, document, args, attrs):
-		self.name = name
+	def __init__(self, document):
 		self.document = document
-		self.content = ''
-		
-		for arg in args:
-			if isinstance(arg, basestring) and arg and arg[0] in '.#':
-				id, classes = parce_ic(arg)
-				
-				if id is not None:
-					attrs['id'] = id
-				
-				if classes:
-					attrs['class'] = ' '.join(classes)
-			elif isinstance(arg, dict):
-				attrs.update(arg)
-			else:
-				self.content = unicode(arg)
-		
-		self.attributes = attrs
-	
-	@property
-	def open(self):
-		attributes_string = ''
-		for key, value in self.attributes.items():
-			if not isinstance(value, basestring):
-				value = unicode(value)
-			attributes_string += ' ' + key.replace('_', '-') + '=\'' + escape(value).replace('\'', '&#39;') + '\''
-		
-		return (
-			'<' +
-			self.name +
-			attributes_string +
-			('/' if self.name in self.document.void_element_names else '') +
-			'>'
-		)
-	
-	@property
-	def close(self):
-		if self.name in self.document.void_element_names:
-			return ''
-		else:
-			return '</' + self.name + '>'
 	
 	def __enter__(self):
-		self._popped = self.document.pop()
+		document = self.document
+		document._popped.append(document._pieces.pop())
 	
-	def __exit__(self, *args):
-		self.document += self._popped
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		document = self.document
+		document._append(document._popped.pop())
 
 
 class Document(object):
-	
-	Element = Element
 	
 	# All valid HTML5 elements, according to https://developer.mozilla.org/en-US/docs/HTML/HTML5/HTML5_element_list .
 	element_names = (
@@ -84,8 +43,12 @@ class Document(object):
 	}
 	
 	def __init__(self, autoescape_mode = True):
+		self.element_context_manager = _ElementContextManager(self)
 		self._autoescape_mode = autoescape_mode
 		self._pieces = []
+		self._popped = []
+		# Cached for performance.
+		self._append = self._pieces.append
 	
 	@contextmanager
 	def autoescape_mode(self, mode):
@@ -116,33 +79,70 @@ class Document(object):
 			element_name = name
 		
 		if element_name in self.element_names:
-			def make_element(*args, **attrs):
-				element = self.Element(element_name, self, args, attrs)
-				content = element.content
-				if self._autoescape_mode:
-					content = escape(content)
-				self._pieces += [element.open, content, element.close]
-				# Return so that the with: syntax can be used.
-				if element_name not in self.void_element_names:
-					return element
+			element_func = self._get_element_func(element_name)
 			# Cache the element function.
-			setattr(self, name, make_element)
-			return make_element
+			setattr(self, name, element_func)
+			return element_func
 		else:
 			raise AttributeError("No such element or attribute: " + name)
 	
 	def __iadd__(self, content):
-		# Add content without considering autoescape.
-		self._pieces.append(content)
+		# Add string content without considering autoescape.
+		self._append(content)
 		return self
 	
 	def __call__(self, content):
 		if self._autoescape_mode:
 			content = escape(content)
-		self._pieces.append(content)
+		self._append(content)
 	
 	def doctype(self):
 		self += '<!DOCTYPE html>'
 	
-	def pop(self):
-		return self._pieces.pop()
+	def _get_element_func(self, element_name):
+		
+		void = element_name in self.void_element_names
+		_append = self._append
+		if not void:
+			close = '</' + element_name + '>'
+		open_start = '<' + element_name
+		open_end = ('/' if void else '') + '>'
+		open = open_start + open_end
+		
+		def element(*args, **attrs):
+			
+			content = ""
+			for arg in args:
+				if isinstance(arg, basestring):
+					if arg and arg[0] in '.#':
+						id, classes = parce_ic(arg)
+						
+						if id is not None:
+							attrs['id'] = id
+						
+						if classes:
+							attrs['class'] = ' '.join(classes)
+					else:
+						content = arg
+				else:
+					content = unicode(arg)
+			
+			if attrs:
+				attributes_string = ''
+				for key, value in attrs.items():
+					if not isinstance(value, basestring):
+						value = unicode(value)
+					attributes_string += ' ' + key.replace('_', '-') + '=\'' + escape(value).replace('\'', '&#39;') + '\''
+				_append(open_start + attributes_string + open_end)
+			else:
+				_append(open)
+			
+			if self._autoescape_mode:
+				content = escape(content)
+			_append(content)
+			
+			# Return so that the with: syntax can be used.
+			if not void:
+				self._append(close)
+				return self.element_context_manager
+		return element
