@@ -1,5 +1,6 @@
 from setuptools import setup
 
+
 setup(
 	name = 'gifruw',
 	version = '0.1.0',
@@ -8,6 +9,8 @@ setup(
 	author = 'Fletcher Tomalty',
 	author_email = 'fletcher@tomalty.com',
 	description = 'A tiny, fast HTML templating engine that lets you write your templates in Python.',
+	setup_requires = ['setuptools-markdown'],
+	long_description_markdown_filename = 'README.md',
 	classifiers = [
 		'Programming Language :: Python :: 2',
 		'Programming Language :: Python :: 2.7',
